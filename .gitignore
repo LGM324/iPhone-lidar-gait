@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+# 데이터·모델은 저장소에 넣지 않음
+*.pkl
+*.npz
+*.npy
+*.r3d
+*.ply
+*.obj
+*.pt
+*.pt2
+*.pth
+assets/
+raw/
+sessions/
+outputs/
+data/
+models/

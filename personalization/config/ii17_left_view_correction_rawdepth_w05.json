@@ -1,0 +1,18 @@
+{
+  "schema_version": "ii17_view_corrections_v1",
+  "description": "Diagnostic left-view correction for silhouette audit only. This does not modify SMPL parameters.",
+  "basis": {
+    "mesh": "outputs/ii13_single_refine_rawdepth_w05/final_single_smpl_canonical.ply",
+    "target_region": "torso_legs_no_shoe",
+    "yaw_preset": "inverse_sides",
+    "y_align": "floor"
+  },
+  "views": {
+    "left": {
+      "yaw_delta_deg": 10.0,
+      "x_shift_m": -0.25,
+      "y_shift_m": -0.08,
+      "z_shift_m": 0.0
+    }
+  }
+}
