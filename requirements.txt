@@ -1,0 +1,19 @@
+# 핵심 (로컬 · Colab 공통). 검증한 버전: Python 3.12, torch 2.12, numpy 2.4, scipy 1.17, opencv 5.0, smplx 0.1.28
+torch>=2.1
+numpy>=1.24
+scipy>=1.10
+opencv-python>=4.8
+matplotlib>=3.7
+pandas>=2.0
+smplx>=0.1.28
+lzfse>=0.4          # Record3D .r3d 의 LiDAR depth/conf 압축 해제
+imageio-ffmpeg>=0.4 # 시각화 영상
+pytest>=8           # tests/
+
+# 선택
+# open3d            # pipeline/scripts/depth_viewer.py (로컬 3D 뷰어)
+
+# Colab 노트북 안에서 따로 설치하는 것 (용량·CUDA 버전 의존):
+#   NB2: Meta Sapiens 1B (Seg/Depth/Normal TorchScript, HuggingFace 에서 다운로드)
+#   NB4: 4D-Humans (https://github.com/shubham-goel/4D-Humans) + detectron2
+# SMPL 모델 (SMPL_NEUTRAL.pkl) 은 라이선스상 포함하지 않음 → https://smpl.is.tue.mpg.de

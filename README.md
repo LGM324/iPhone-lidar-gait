@@ -6,7 +6,17 @@
 
 > 개인 프로젝트 (2026.03 – 진행 중) · 촬영, 데이터 수집, 파이프라인 설계·구현·검증 모두 단독 수행
 > 재활 로봇 보조 응용을 목표로, 마커 없이 **스마트폰 한 대**로 보행 중 무릎·고관절·발목 각도를 얻는 것이 목표입니다.
-> **IMU(Xsens) 대조 검증은 진행 중**입니다. 이 저장소는 결과보다 **과정과 판단 근거**를 정리한 것입니다.
+> 2026년 3월부터 로컬에서 개발했고, 2026년 10월 Google Colab 으로 이식하면서 GitHub 로 옮겼습니다 (그 이전 이력은 [DECISIONS.md](docs/DECISIONS.md) 에 기록).
+
+### 현재 수치 (잠정 · provisional)
+
+| 항목 | 결과 | 조건 |
+|---|---|---|
+| 무릎각 vs IMU, 카메라 쪽 다리 | **RMSE 3.40°**, 상관 0.989 | 3 km/h, 250 프레임 (보행 6 주기), 기존 체형 |
+| 무릎각 vs IMU, 가려지는 쪽 다리 | RMSE 7.67° (250 프레임) · 같은 세션 앞 84 프레임에서 8.01° → **5.09°** (개인 메쉬 + 옷 처리) | 84 프레임 값은 잠정, 16 조합 실험 후 250 프레임으로 확정 예정 |
+| 개인 메쉬, 피팅에 안 쓴 9장 (8방향) | 실루엣 IoU 0.838 → **0.925**, depth 오차 1.59 → **1.22 cm** | 맨몸 SMPL → SMPL+D |
+
+> 피험자 1명(본인), 세션 1개. IMU 자체도 광학 모션캡처 대비 2 – 5° 오차가 보고되므로, 위 값은 "IMU 와의 일치도" 입니다. 이 저장소는 결과보다 **과정과 판단 근거**를 정리한 것입니다.
 
 ---
 
@@ -21,6 +31,8 @@
 8. [데이터·라이선스](#8-데이터라이선스)
 
 모든 선택지에서 무엇을 시험했고 왜 그것을 골랐는지는 [**docs/DECISIONS.md**](docs/DECISIONS.md) 에 따로 정리했습니다.
+
+> 용어: **NB** = 노트북(Google Colab `.ipynb`). 파이프라인 단계마다 NB1 ~ NB7 로 번호를 붙였습니다.
 
 ---
 
@@ -189,12 +201,22 @@ MyDrive/walking_0729/
 
 개인 체형 단계는 [`personalization/README.md`](personalization/README.md) 참고.
 
+**로컬 환경과 테스트**
+```bash
+pip install -r requirements.txt
+python -m pytest tests                                   # SMPL 모델 없이도 실행 (모델 필요한 2개는 건너뜀)
+SMPL_MODEL_DIR=/path/to/models python -m pytest tests     # 전체 (smpl/SMPL_NEUTRAL.pkl)
+```
+테스트: 개인 메쉬가 D = 0 일 때 SMPL 과 정점·관절이 같은지, D 가 뼈 위치를 바꾸지 않는지, 데이터 항을 끄면 이전 공식과 같은지, 하의 한쪽 항의 부호, 튄 프레임 판정 규칙, 옵션별 결과 폴더 분리.
+
 ## 7. 저장소 구조
 
 ```
 ├── personalization/          0 · 개인 메쉬 (돌기 영상 → SMPL+D)
 │   ├── personal_mesh/        정지 프레임 선택, fit_personal (β → 점검 → D), 옷 영역 판정, 검증, NB_PERSONAL
 │   └── legacy_stand4/        (기록용) 이전 정자세 4방향 피팅 — 좌표 버그 포함
+├── tests/                    pytest (개인 메쉬·데이터 항·튐 판정·설정)
+├── requirements.txt
 ├── pipeline/
 │   ├── notebooks/            NB0 – NB8, NB_RUN_ALL, NB_EXPERIMENTS (Colab)
 │   └── scripts/              walkcfg.py (경로·옵션) + 단계별 스크립트 + personal_smpl / leg_data_term / far_spike_refit + 시각화
