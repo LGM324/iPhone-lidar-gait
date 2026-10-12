@@ -69,7 +69,7 @@ _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 from a0_align_v2 import side_from_zorder, backproject  # noqa: E402
 
 import smplx  # noqa: E402
-_smpl = smplx.create(SMPL_MODEL, model_type="smpl", gender="neutral", num_betas=10).to(DEVICE)
+_smpl = walkcfg.make_smpl(SMPL_MODEL).to(DEVICE)
 _FACES_T = torch.tensor(_smpl.faces.astype(np.int64), device=DEVICE)
 _FACES_NP = _smpl.faces.astype(np.int64)
 

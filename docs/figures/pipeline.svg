@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 470" role="img" aria-label="Pipeline: iPhone .r3d recording is extracted, converted to metric person depth, fitted with an SMPL lower body, turned into a labeled knee-angle time series, and validated against Xsens IMUs. A personal body shape from a separate standing capture and 4D-Humans initial poses feed the SMPL fit.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 470" role="img" aria-label="Pipeline: iPhone .r3d recording is extracted, converted to metric person depth, fitted with an SMPL lower body, turned into a labeled knee-angle time series, and validated against Xsens IMUs. A personal SMPL+D mesh (body shape + clothes/shoes) from a turning capture in the same clothes and 4D-Humans initial poses feed the SMPL fit.">
   <defs>
     <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#18202b"/></marker>
     <marker id="arp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f55c4"/></marker>
@@ -27,11 +27,11 @@
     <text x="570" y="156" text-anchor="middle" font-weight="600">C · SMPL lower-body fit</text>
     <text x="570" y="178" text-anchor="middle" font-size="12">root alignment</text>
     <text x="570" y="196" text-anchor="middle" font-size="12">near leg → far leg</text>
-    <text x="570" y="214" text-anchor="middle" font-size="12">9 DOF × 2, no pose prior</text>
+    <text x="570" y="214" text-anchor="middle" font-size="12">9 DOF × 2 · cloth-aware term</text>
 
     <rect x="715" y="130" width="160" height="96" rx="4" fill="none" stroke="#18202b"/>
     <text x="795" y="156" text-anchor="middle" font-weight="600">D · Knee angles</text>
-    <text x="795" y="178" text-anchor="middle" font-size="12">evidence tagging</text>
+    <text x="795" y="178" text-anchor="middle" font-size="12">spike refit · evidence</text>
     <text x="795" y="196" text-anchor="middle" font-size="12">occlusion-gap infill</text>
     <text x="795" y="214" text-anchor="middle" font-size="12">value · σ · label</text>
 
@@ -58,11 +58,11 @@
     <text x="430" y="322" font-size="12" fill="#4a5566">pose init</text>
 
     <rect x="560" y="300" width="250" height="62" rx="4" fill="none" stroke="#1f55c4" stroke-width="2"/>
-    <text x="685" y="326" text-anchor="middle" font-weight="600">Standing 4-view capture (separate)</text>
-    <text x="685" y="346" text-anchor="middle" font-size="12">per-view fit → canonical fusion</text>
+    <text x="685" y="326" text-anchor="middle" font-weight="600">Turning capture, walking clothes</text>
+    <text x="685" y="346" text-anchor="middle" font-size="12">77 still frames → β + D (SMPL+D)</text>
     <line x1="620" y1="300" x2="620" y2="228" stroke="#1f55c4" stroke-width="2" marker-end="url(#arp)"/>
-    <text x="628" y="270" font-size="12" fill="#1f55c4" font-weight="600">body shape β (frozen)</text>
+    <text x="628" y="270" font-size="12" fill="#1f55c4" font-weight="600">personal mesh β + D (frozen)</text>
 
-    <text x="15" y="440" font-size="12" fill="#4a5566">Dashed = IMU validation stage · Blue = personal body-shape path</text>
+    <text x="15" y="440" font-size="12" fill="#4a5566">Dashed = IMU validation stage · Blue = personal mesh path (body shape + clothes/shoes surface)</text>
   </g>
 </svg>

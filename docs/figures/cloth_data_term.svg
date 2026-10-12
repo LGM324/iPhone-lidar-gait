@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 380" role="img" aria-label="Cloth-aware data term: on the left, a two-sided term pulls the thin thigh toward the loose shorts surface, bending the knee; on the right, a one-sided term only penalizes the body poking through the shorts and lets the shorts float up to 6 cm, while bare shank skin is still matched tightly.">
+  <defs>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f7a4d"/></marker>
+  </defs>
+  <rect width="1000" height="380" fill="#ffffff"/>
+  <g font-family="Malgun Gothic, Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#18202b">
+    <text x="250" y="30" text-anchor="middle" font-weight="700">양방향 (기존)</text>
+    <text x="750" y="30" text-anchor="middle" font-weight="700">하의 한쪽 항 (BUFF · DoubleFusion 방식)</text>
+    <line x1="500" y1="45" x2="500" y2="340" stroke="#cccccc"/>
+
+    <!-- 왼쪽: 양방향 -->
+    <rect x="150" y="70" width="110" height="130" rx="8" fill="#e8e1d3" stroke="#8a7f6a" stroke-dasharray="5 3"/>
+    <text x="140" y="80" text-anchor="end" font-size="11" fill="#8a7f6a">반바지 표면</text>
+    <text x="140" y="96" text-anchor="end" font-size="11" fill="#8a7f6a">(관측 depth)</text>
+    <rect x="200" y="75" width="40" height="215" rx="18" fill="#b9c7e6" stroke="#2a4f9e" transform="rotate(8 220 75)"/>
+    <text x="300" y="250" font-size="11" fill="#2a4f9e">얇은 허벅지 + 종아리 (SMPL)</text>
+    <line x1="230" y1="120" x2="165" y2="120" stroke="#c0392b" stroke-width="2" marker-end="url(#b)"/>
+    <line x1="228" y1="160" x2="168" y2="160" stroke="#c0392b" stroke-width="2" marker-end="url(#b)"/>
+    <text x="250" y="320" text-anchor="middle" font-size="12">옷 표면 쪽으로 끌려감 → 허벅지 방향이 틀어짐</text>
+    <text x="250" y="338" text-anchor="middle" font-size="12" fill="#c0392b">디딤기 과굴곡 +6.4° (C3)</text>
+
+    <!-- 오른쪽: 한쪽 항 -->
+    <rect x="650" y="70" width="110" height="130" rx="8" fill="#e8e1d3" stroke="#8a7f6a" stroke-dasharray="5 3"/>
+    <rect x="700" y="75" width="40" height="215" rx="18" fill="#b9c7e6" stroke="#2a4f9e"/>
+    <line x1="740" y1="130" x2="758" y2="130" stroke="#1f7a4d" stroke-width="2"/>
+    <text x="770" y="126" font-size="11" fill="#1f7a4d">0 ≤ 간격 ≤ 6 cm: 벌점 없음</text>
+    <text x="770" y="142" font-size="11" fill="#1f7a4d">(옷이 몸 위에 떠 있음)</text>
+    <text x="770" y="176" font-size="11" fill="#c0392b">몸이 옷을 뚫으면: 벌점</text>
+    <text x="770" y="192" font-size="11" fill="#4a5566">6 cm 넘게 멀어지면: 약하게 당김</text>
+    <line x1="760" y1="250" x2="742" y2="250" stroke="#1f7a4d" stroke-width="2" marker-end="url(#g)"/>
+    <text x="770" y="254" font-size="11" fill="#1f7a4d">맨살 종아리·신발: 양방향 (꽉)</text>
+    <text x="750" y="320" text-anchor="middle" font-size="12">허벅지는 옷 안에서 뼈 방향대로, 종아리가 무릎 위치를 잡음</text>
+    <text x="750" y="338" text-anchor="middle" font-size="12" fill="#1f7a4d">두 다리 모두 개선 (기존 β: 오른 3.69 → 2.98°, 왼 8.01 → 6.62°)</text>
+  </g>
+</svg>

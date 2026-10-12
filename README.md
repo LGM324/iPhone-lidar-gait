@@ -39,25 +39,25 @@
 
 | 단계 | 하는 일 | 코드 |
 |---|---|---|
-| **0 · 개인 체형** | 정자세 4방향 촬영 → SMPL 체형 β 추정 (한 번, 이후 고정) | [`personalization/`](personalization) |
+| **0 · 개인 메쉬** | 보행 때와 같은 옷·신발로 한 바퀴 돈 영상 → SMPL 체형 β + 옷·신발 표면 D (한 번, 이후 고정) | [`personalization/`](personalization) |
 | **A · 추출** | `.r3d` → RGB / LiDAR depth / confidence, 보행 구간 선택 | NB1 |
 | **B · 사람 depth** | Sapiens 상대 depth → LiDAR 로 미터 변환 → 세션 전역 scale 재보정 | NB2, NB3 |
-| **C · SMPL 하체 fit** | 4D-Humans 초기 자세 → 몸 위치 정렬 → 가까운 다리 → 먼 다리 | NB4, NB5 |
+| **C · SMPL 하체 fit** | 4D-Humans 초기 자세 → 몸 위치 정렬 → 가까운 다리 → 먼 다리 (반바지는 한쪽 데이터 항) → 튄 프레임 재피팅 | NB4, NB5 |
 | **D · 무릎각** | 측정 근거 태깅 → 가려진 구간 보간 → 값·불확실도·라벨 | NB6 |
 | **E · IMU 검증** | Xsens MTw 6센서 무릎각과 시간 동기화 후 비교 (진행 중) | NB7 |
 
 ## 3. 단계별 설명
 
-### 0 · 개인 체형 (STAND 4방향)
+### 0 · 개인 메쉬 (체형 + 옷·신발)
 
-보행 영상에서 매 프레임 체형을 추정하면 프레임마다 다리 길이가 달라집니다. 그래서 **정자세 4방향(앞·오른쪽·뒤·왼쪽)을 따로 촬영**해 체형 β 를 한 번 정하고, 보행 분석 내내 고정합니다.
+보행 영상에서 매 프레임 체형을 추정하면 다리 길이가 출렁이고, 맨몸 SMPL 을 옷 입은 depth 에 맞추면 뼈가 옷 쪽으로 끌려갑니다. 그래서 **보행 때와 같은 옷·신발로 한 바퀴(8방향) 돈 30 fps 영상**에서 정지 프레임 77장을 자동으로 골라, 체형 β 와 옷·신발 표면 D 를 가진 **개인 메쉬(SMPL+D)** 를 한 번 만들고 보행 내내 고정합니다.
 
-<p align="center"><img src="docs/figures/stand_personalization.png" width="900" alt="STAND 4방향 RGB, SMPL 실루엣 비교, 4방향 depth 점과 최종 SMPL"></p>
+<p align="center"><img src="docs/figures/personal_overlay.jpg" width="900" alt="개인 메쉬를 돌기 영상 사진에 겹친 모습"></p>
 
-- **II-8 초기화** → **II-10 4방향 공동 fit** (β 는 4방향이 공유, 자세는 방향별. 키 1.81 m 로 β 사전 보정 후 4단계 fit) → **II-12 canonical 정렬** (회전한 사람을 한 좌표계로) → **II-13 단일 정제** (β 고정, 하체 raw depth 잔차 추가)
-- 실루엣 IoU 를 따로 재 보니 **왼쪽 뷰만 0.003 으로 붕괴** → 체형이 아니라 왼쪽 뷰 회전 정렬 문제로 진단 → 보정 후 0.41
-- 최종 (II-13 보고서): 정자세 메쉬 키 1.808 m (실측 1.81 m), depth 점→메쉬 3.4 cm, 몸통·다리 IoU 0.455
-- 한계 (그림 오른쪽): 4방향 depth 점과 메쉬가 아직 어긋나는 곳이 있음. 다리 길이 오차가 무릎각 오차로 이어지는지는 따로 확인 ([4-4](#4-4-다리-길이가-틀려서-무릎이-굽나))
+- 1단계: β 공유 + 프레임별 자세, 실루엣 + 보이는 면 depth, 옷 부분은 "몸이 옷 안쪽" 만 → **점검** (방향 · |β| · 실루엣 키) → 2단계: 법선 방향 변위 D (맨살 ±1, 상의 0 – 5, 신발 0 – 4 cm)
+- **피팅에 쓰지 않은 9장 (8방향)** 에서 맨몸 SMPL → SMPL+D: 실루엣 IoU 0.838 → **0.925**, depth 오차 1.59 → **1.22 cm**
+- 이전 정자세 피팅이 **SMPL 을 거꾸로 세운 채** 맞췄던 버그를 찾아 다시 설계했습니다 ([4-6](#4-6-개인-체형-피팅이-거꾸로-서-있었다)).
+- 자세한 과정: [**personalization/README.md**](personalization/README.md)
 
 ### A · 추출
 
@@ -84,6 +84,8 @@ Record3D `.r3d` (zip) 에서 프레임별 RGB 1440×1920, LiDAR 192×256, confid
 2. **A0 몸 정렬**: 몸 전체 위치·방향만 depth 에 맞춤 (몸통 가중 1.0, 다리 0.3).
 3. **좌우 다리 구분**: 측면 촬영이라 카메라 거리 z 가 곧 사람의 좌우 축. 하체 점의 z 를 1D 2-means 로 나누고, 두 무리 간격이 8 cm(다리 두께) 미만이면 "겹침"으로 보고 나누지 않음.
 4. **가까운 다리 → 먼 다리** 순서로 각각 고관절·무릎·발목 9-DOF 를 depth 표면에 맞춤 (Huber 3 cm, 카메라에서 보이는 면만, **자세 prior 없이 측정만으로**).
+5. **옷 처리**: 헐렁한 반바지 정점은 "몸이 옷 밖으로 나오면 벌점" 한쪽 항만 적용 ([4-7](#4-7-옷-처리-변수를-하나씩-떼어-원인-찾기)). 맨살·신발은 양방향.
+6. **튄 프레임 재피팅**: 무릎 > 85° 또는 앞뒤보다 30° 이상 튀면, 앞뒤 정상 프레임 자세를 초기값으로 다시 피팅 ([4-8](#4-8-피팅이-튄-프레임-다시-맞추기)).
 
 <p align="center"><img src="docs/figures/nb5_fit.png" width="900" alt="좌우 구분, SMPL 투영, 옆 단면, 위에서 본 다리"></p>
 
@@ -121,16 +123,47 @@ Record3D `.r3d` (zip) 에서 프레임별 RGB 1440×1920, LiDAR 192×256, confid
 
 ### 4-4. 다리 길이가 틀려서 무릎이 굽나?
 
-다리를 거의 편 디딤기 구간에서 무릎각이 IMU 보다 크게 나와, "개인 체형의 다리가 길어서 무릎을 굽혀 맞추는 것"이라는 가설을 세웠습니다. 디딤기 148 프레임에서 SMPL 발바닥과 depth 발바닥 높이를 비교하니 SMPL 발이 오히려 **2.5 cm 위**(신발 밑창 두께)였고, 높이 차와 편향의 상관은 −0.08. 또 무릎을 2° → 8° 굽혀도 고관절~발목 거리는 2 mm 밖에 줄지 않아, cm 단위 길이 오차로는 몇 도의 편향을 설명할 수 없습니다 → **가설 기각**. 남은 후보는 정강이 표면 기울기(바지·종아리 모양)와 4D-Humans 초기값의 과굴곡이고, 확인 실험을 준비 중입니다.
+다리를 거의 편 디딤기 구간에서 무릎각이 IMU 보다 크게 나와, "개인 체형의 다리가 길어서 무릎을 굽혀 맞추는 것"이라는 가설을 세웠습니다. 디딤기 148 프레임에서 SMPL 발바닥과 depth 발바닥 높이를 비교하니 SMPL 발이 오히려 **2.5 cm 위**(신발 밑창 두께)였고, 높이 차와 편향의 상관은 −0.08. 또 무릎을 2° → 8° 굽혀도 고관절~발목 거리는 2 mm 밖에 줄지 않아, cm 단위 길이 오차로는 몇 도의 편향을 설명할 수 없습니다 → **가설 기각**. 이후 실험에서 **헐렁한 반바지 표면이 허벅지를 끌어당기는 효과**가 디딤기 과굴곡을 키우는 요인임을 확인했습니다 ([4-7](#4-7-옷-처리-변수를-하나씩-떼어-원인-찾기)). 다만 기존 β 의 디딤기 편향(−1 ~ −2°)까지 모두 설명되지는 않아, 16 조합 실험에서 함께 정리합니다.
 
 ### 4-5. 깊이 모델 고르기
 
 Depth Pro, PromptDA, Depth Anything v2, Prior-Depth-Anything, Sapiens 를 정자세 4방향에서 키(실측 1.81 m)와 시간축 깜빡임으로 비교했습니다. PromptDA 계열은 키 1.86 – 2.23 m 로 과대, DAv2 는 키 jump std 0.99 cm (기준 0.5 cm 초과) → Sapiens + LiDAR 채택. 자세한 표는 [DECISIONS.md D3](docs/DECISIONS.md).
 
+### 4-6. 개인 체형 피팅이 거꾸로 서 있었다
+
+<p align="center"><img src="docs/figures/upside_down_bug.png" width="700" alt="이전 피팅은 SMPL 이 거꾸로 서 있었음 (빨강 머리, 초록 발목)"></p>
+
+정자세 피팅 결과가 "사람 같지 않다" 는 의문에서 출발해, 피팅 코드 자신의 투영 규약으로 메쉬를 다시 그려 보니 **코가 발 위치에 찍혔습니다.** 4D-Humans 의 몸 방향(OpenCV, y 아래)을 y 만 뒤집은 관측 좌표에 변환 없이 넣었고, 방향 변화 한도(11°) 때문에 끝까지 바로잡히지 않았습니다 (4방향 모두 176 – 181°). 이 상태에서 β 는 키 맞추기 이후 거의 움직이지 않아, "개인 체형" 은 사실상 평균 체형 + 키였습니다.
+→ 좌표를 OpenCV 하나로 통일하고, 실루엣을 주 항으로 하는 새 피팅을 만들고, **피팅에 안 쓴 데이터로 검증** 하도록 다시 설계했습니다 ([personalization](personalization/README.md)).
+
+### 4-7. 옷 처리: 변수를 하나씩 떼어 원인 찾기
+
+<p align="center"><img src="docs/figures/ablation_c0_c5.png" width="820" alt="C0 – C5 비교"></p>
+
+개인 메쉬를 보행에 넣자 **가려지는 왼다리는 좋아졌는데 카메라 쪽 오른다리는 나빠졌습니다.** 한 번에 하나씩 바꿔 IMU 무릎각과 비교했습니다 (002 세션 84 프레임, 잠정).
+
+| 단계 | 바꾼 것 | 확인한 것 |
+|---|---|---|
+| C0 → C1 | 개인 메쉬 (옷·신발 D) | 왼 8.0 → 6.4°, 오른 3.7 → 4.1° |
+| C1 → C2 | 맨몸만 날씬하게 | 오른다리 더 나빠짐 → **"통통한 체형 탓" 기각** |
+| C1 → C3 | 반바지 D 만 0 | 오른 디딤기 **과굴곡 +6.4°**: 얇은 허벅지가 반바지 표면으로 끌려감 |
+| C3 → C4 | 반바지에 한쪽 데이터 항 | 왼다리 5.1° (최고), 오른 디딤기 과굴곡 +6.4 → +4.2° |
+| C0 → C5 | 기존 β 에 한쪽 항만 | 오른 3.7 → **3.0°**, 왼 8.0 → 6.6° → 한쪽 항은 두 다리 모두 개선 |
+
+<p align="center"><img src="docs/figures/cloth_data_term.svg" width="820" alt="양방향 vs 하의 한쪽 데이터 항"></p>
+
+헐렁한 옷은 걸을 때 모양이 바뀌므로 고정 모양으로 넣어도, 빼고 양방향으로 끌어도 뼈 방향이 틀어집니다. 옷 아래 몸을 추정하는 연구들([BUFF](https://arxiv.org/abs/1703.04454), depth 카메라 한 대의 [DoubleFusion](https://arxiv.org/abs/1804.06023))처럼 **"몸은 옷 안쪽에만 있으면 된다"** 는 한쪽 항으로 바꾼 것이 핵심이었습니다. 개인 메쉬 중 어느 요소(β / 신발 D / 상의 D)가 어느 다리에 효과가 있는지는 **16 조합 완전 요인 실험** 으로 정리 중이며, 선택 기준(두 다리 RMSE 평균 최소)은 실험 전에 고정했습니다.
+
+### 4-8. 피팅이 튄 프레임 다시 맞추기
+
+관측 점은 충분한데 먼 다리 무릎이 114°, 123° 로 접힌 프레임이 나왔습니다 (보행 최대 굴곡은 60 – 70°). IMU 를 보지 않고 **물리적 범위만으로** 판정합니다: 무릎 > 85°, 또는 앞뒤 2 프레임 중앙값과 30° 이상 차이 (30 fps 에서 한 프레임 만에 튀었다 돌아오는 것은 불가능). 걸린 프레임은 버리지 않고 **앞뒤 정상 프레임 자세를 보간해 초기값으로 다시 피팅** 합니다. 114° → 45°, 123° → 21° 로 정상화됐고, 다시 피팅해도 튀면 그때 가림과 같이 보간합니다.
+
 ## 5. 현재 상태
 
-- [x] 0 · 개인 체형 (STAND 4방향)
+- [x] 0 · 개인 메쉬 (돌기 영상 → SMPL+D, 피팅에 안 쓴 9장 검증)
 - [x] A ~ D 파이프라인, Google Colab 으로 이식 (연구실 PC 없이 전 과정 재실행)
+- [x] 옷 처리 (하의 한쪽 데이터 항) · 튄 프레임 재피팅
+- [ ] 체형·표면·옷 처리 16 조합 실험 → 최선 조합 250 프레임 확인 ← 진행 중
 - [x] 2026-07-29 데이터 수집: iPhone 영상 + Xsens MTw 6센서, 트레드밀 1 / 3 / 6 km/h
 - [x] IMU 무릎각 계산·동기화 모듈
 - [ ] **IMU 대비 무릎각 정확도 (RMSE / bias / 상관)** ← 진행 중
@@ -141,13 +174,13 @@ Depth Pro, PromptDA, Depth Anything v2, Prior-Depth-Anything, Sapiens 를 정자
 ## 6. 실행 방법 (Google Colab)
 
 1. 이 저장소를 Google Drive `MyDrive/walking_0729/` 로 복사 (`pipeline/scripts`, `pipeline/notebooks` → `scripts/`, `notebooks/`).
-2. `assets/` 에 **직접 받은** SMPL 모델과 체형 파일을 둡니다 (아래 [데이터·라이선스](#8-데이터라이선스)).
+2. `assets/` 에 **직접 받은** SMPL 모델을 두고, 개인 메쉬는 [`NB_PERSONAL`](personalization/personal_mesh/NB_PERSONAL.ipynb) 로 만듭니다 (아래 [데이터·라이선스](#8-데이터라이선스)).
 3. `raw/` 에 Record3D `.r3d`, (선택) Xsens 내보내기 `.txt` 를 둡니다.
-4. **`NB_RUN_ALL.ipynb`** 하나로 NB1 → NB7 을 순서대로 실행하거나, NB1 ~ NB7 을 하나씩 실행합니다. GPU 런타임 (T4 이상) 필요.
+4. **`NB_RUN_ALL.ipynb`** 하나로 NB1 → NB7 을 순서대로 실행하거나, NB1 ~ NB7 을 하나씩 실행합니다. GPU 런타임 (T4 이상) 필요. 주요 옵션: `PERSONAL_MESH` (개인 메쉬), `CLOTH_ONESIDED` (하의 한쪽 항), `QUICK_FRAMES` (앞쪽 N 프레임만 빠른 확인). 여러 조건 비교는 [`NB_EXPERIMENTS`](pipeline/notebooks/NB_EXPERIMENTS.ipynb).
 
 ```
 MyDrive/walking_0729/
-├── assets/     models/smpl/SMPL_NEUTRAL.pkl, final_single_smpl_params.npz (β), smpl_vert_segmentation.json
+├── assets/     models/smpl/SMPL_NEUTRAL.pkl, personal_mesh_*.npz (β + D), smpl_vert_segmentation.json, smpl_lower_cloth_vertices.npy
 ├── raw/        *.r3d, imu/*.txt
 ├── scripts/    ← pipeline/scripts
 ├── notebooks/  ← pipeline/notebooks
@@ -159,21 +192,20 @@ MyDrive/walking_0729/
 ## 7. 저장소 구조
 
 ```
-├── personalization/          0 · 개인 체형 (STAND 4방향 → β)
-│   ├── notebooks/            S1 Sapiens depth, S2 4D-Humans 초기값 (Colab)
-│   ├── smpl_pipeline/        ii8 → ii10 → ii12 → ii13 (+ 진단 ii14 – ii17)
-│   └── config/               왼쪽 뷰 보정값
+├── personalization/          0 · 개인 메쉬 (돌기 영상 → SMPL+D)
+│   ├── personal_mesh/        정지 프레임 선택, fit_personal (β → 점검 → D), 옷 영역 판정, 검증, NB_PERSONAL
+│   └── legacy_stand4/        (기록용) 이전 정자세 4방향 피팅 — 좌표 버그 포함
 ├── pipeline/
-│   ├── notebooks/            NB0 – NB8, NB_RUN_ALL (Colab)
-│   └── scripts/              walkcfg.py (경로 설정) + 단계별 스크립트 + 시각화
+│   ├── notebooks/            NB0 – NB8, NB_RUN_ALL, NB_EXPERIMENTS (Colab)
+│   └── scripts/              walkcfg.py (경로·옵션) + 단계별 스크립트 + personal_smpl / leg_data_term / far_spike_refit + 시각화
 └── docs/
-    ├── DECISIONS.md          선택지별 근거 기록
+    ├── DECISIONS.md          선택지별 근거 기록 (+ DECISIONS_2026-10_personal_mesh.md: 개인 메쉬·옷 처리·튐 재피팅)
     ├── figures/, media/      README 그림 (얼굴 모자이크 처리)
 ```
 
 ## 8. 데이터·라이선스
 
-- **포함하지 않은 것**: SMPL 모델 파일 (재배포 금지 — [smpl.is.tue.mpg.de](https://smpl.is.tue.mpg.de) 에서 직접 받아야 함), 원본 영상·depth·IMU 데이터, 개인 체형 β 파일.
+- **포함하지 않은 것**: SMPL 모델 파일 (재배포 금지 — [smpl.is.tue.mpg.de](https://smpl.is.tue.mpg.de) 에서 직접 받아야 함), 원본 영상·depth·IMU 데이터, 개인 메쉬 파일.
 - 그림·영상의 얼굴은 모두 모자이크 처리했습니다.
 - 사용한 외부 모델: [Sapiens](https://github.com/facebookresearch/sapiens) (CC BY-NC 4.0), [4D-Humans](https://github.com/shubham-goel/4D-Humans) (MIT), [detectron2](https://github.com/facebookresearch/detectron2) (Apache 2.0), [SMPL](https://smpl.is.tue.mpg.de) (연구용 라이선스). 각 라이선스를 따릅니다.
 - 이 저장소의 코드: [MIT](LICENSE).

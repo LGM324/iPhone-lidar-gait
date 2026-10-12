@@ -30,6 +30,8 @@ near 와 다른 3 안전장치:
 import os as _os, sys as _sys
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 import walkcfg  # [colab_kit] 경로/세션 설정
+from leg_data_term import leg_data_energy
+CLOTH_MASK = None   # main 에서 walkcfg.cloth_mask() 로 설정 (하의 한쪽 항)
 import os, sys, json, argparse
 import numpy as np
 import torch
@@ -132,12 +134,7 @@ def fit_far_frame(smpl, bt, bp_locked, go, tr, far_pts, faces,
                    global_orient=go, transl=tr)
         v = out.vertices[0]
         vn = vertex_normals(v, faces)
-        vv = v[vn[:, 2] < 0.0]
-        d_list = []
-        for i in range(0, pts_t.shape[0], 4096):
-            d_list.append(torch.cdist(pts_t[i:i + 4096], vv).min(1).values)
-        dist = torch.cat(d_list)
-        E_data  = huber(dist, HUBER_DELTA_M).mean()
+        E_data  = leg_data_energy(pts_t, v, vn, HUBER_DELTA_M, CLOTH_MASK, walkcfg.CLOTH_TOL_M)
         E_prior = ((theta - theta0) ** 2).mean()
         (E_data + lam_prior * E_prior).backward()
         opt.step()
@@ -214,7 +211,9 @@ def main():
     print(f"[near fit fids] n={len(near_fids)} [{near_fids.min()}~{near_fids.max()}]")
 
     import smplx
-    smpl = smplx.create(SMPL_MODEL, model_type="smpl", gender="neutral", num_betas=10).to(DEVICE)
+    smpl = walkcfg.make_smpl(SMPL_MODEL).to(DEVICE)
+    global CLOTH_MASK
+    CLOTH_MASK = walkcfg.cloth_mask(DEVICE)
     faces = torch.tensor(smpl.faces.astype(np.int64), device=DEVICE)
     print(f"[SMPL] loaded on {DEVICE}")
 

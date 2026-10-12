@@ -313,8 +313,7 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     betas, target_h = load_frozen_betas(FROZEN_NPZ)
     betas_t = torch.tensor(betas, device=DEVICE)
-    smpl = smplx.create(SMPL_MODEL, model_type="smpl", gender="neutral",
-                        num_betas=10).to(DEVICE)
+    smpl = walkcfg.make_smpl(SMPL_MODEL).to(DEVICE)
     faces = torch.tensor(smpl.faces.astype(np.int64), device=DEVICE)
     with open(CAM_INTR) as f:
         K = json.load(f)
@@ -348,6 +347,9 @@ def main():
     files = sorted(glob.glob(os.path.join(DEPTH_SEQ, "WALK_side_*_person_metric.npy")))
     frame_ids = [int(re.search(r"(\d+)_person_metric", os.path.basename(f)).group(1))
                  for f in files]
+    if walkcfg.FRAME_LIMIT > 0:                      # 빠른 확인 모드: 앞쪽 N 프레임만
+        files, frame_ids = files[:walkcfg.FRAME_LIMIT], frame_ids[:walkcfg.FRAME_LIMIT]
+        print(f"[quick] 앞쪽 {len(files)} 프레임만 처리 (WALK_FRAME_LIMIT)")
 
     # depth fid → 4D-Humans row 매핑
     if fourdh_fids is not None:

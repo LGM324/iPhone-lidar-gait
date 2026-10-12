@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 430" role="img" aria-label="Personal mesh pipeline: a 30 fps turning capture in walking clothes is reduced to 77 still frames, processed with the walking pipeline (Sapiens mask, LiDAR-anchored depth, 4D-Humans init), then stage 1 fits shared body shape beta and per-frame pose, a gate checks orientation and silhouette, stage 2 adds normal displacements D per region, and the resulting SMPL+D drives the walking fit with joints from beta only.">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#18202b"/></marker>
+  </defs>
+  <rect width="1100" height="430" fill="#ffffff"/>
+  <g font-family="Malgun Gothic, Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#18202b">
+    <rect x="15" y="40" width="170" height="120" rx="4" fill="none" stroke="#18202b"/>
+    <text x="100" y="64" text-anchor="middle" font-weight="700">① 촬영</text>
+    <text x="100" y="88" text-anchor="middle" font-size="12">보행 때 옷·신발</text>
+    <text x="100" y="106" text-anchor="middle" font-size="12">8방향 돌기 · 30 fps</text>
+    <text x="100" y="124" text-anchor="middle" font-size="12">정지 프레임 77장</text>
+    <text x="100" y="142" text-anchor="middle" font-size="12">(STAND 41 + T자세 36)</text>
+
+    <rect x="225" y="40" width="190" height="120" rx="4" fill="none" stroke="#18202b"/>
+    <text x="320" y="64" text-anchor="middle" font-weight="700">② 관측 준비</text>
+    <text x="320" y="88" text-anchor="middle" font-size="12">Sapiens 사람 마스크</text>
+    <text x="320" y="106" text-anchor="middle" font-size="12">LiDAR 보정 미터 depth</text>
+    <text x="320" y="124" text-anchor="middle" font-size="12">4D-Humans 초기 자세</text>
+    <text x="320" y="142" text-anchor="middle" font-size="12">(보행 NB1–NB4 재사용)</text>
+
+    <rect x="455" y="40" width="200" height="120" rx="4" fill="none" stroke="#1f55c4" stroke-width="2"/>
+    <text x="555" y="64" text-anchor="middle" font-weight="700">③ 1단계: 맨몸</text>
+    <text x="555" y="88" text-anchor="middle" font-size="12">β 공유 + 프레임별 자세</text>
+    <text x="555" y="106" text-anchor="middle" font-size="12">실루엣 + 보이는 면 depth</text>
+    <text x="555" y="124" text-anchor="middle" font-size="12">옷 부분은 "옷 안쪽"만</text>
+    <text x="555" y="142" text-anchor="middle" font-size="12">OpenCV 좌표 통일</text>
+
+    <rect x="695" y="62" width="120" height="76" rx="4" fill="#fff4e5" stroke="#c77700"/>
+    <text x="755" y="86" text-anchor="middle" font-weight="700">점검</text>
+    <text x="755" y="106" text-anchor="middle" font-size="12">머리가 위 · |β| &lt; 2.5</text>
+    <text x="755" y="124" text-anchor="middle" font-size="12">실루엣 키 비율</text>
+
+    <rect x="855" y="40" width="230" height="120" rx="4" fill="none" stroke="#1f55c4" stroke-width="2"/>
+    <text x="970" y="64" text-anchor="middle" font-weight="700">④ 2단계: 옷·신발 표면 D</text>
+    <text x="970" y="88" text-anchor="middle" font-size="12">법선 방향 숫자 하나 / 정점</text>
+    <text x="970" y="106" text-anchor="middle" font-size="12">맨살 ±1 · 상의 0–5 · 신발 0–4 cm</text>
+    <text x="970" y="124" text-anchor="middle" font-size="12">Laplacian 매끄러움</text>
+    <text x="970" y="142" text-anchor="middle" font-size="12">D: STAND 프레임만</text>
+
+    <line x1="185" y1="100" x2="223" y2="100" stroke="#18202b" marker-end="url(#a)"/>
+    <line x1="415" y1="100" x2="453" y2="100" stroke="#18202b" marker-end="url(#a)"/>
+    <line x1="655" y1="100" x2="693" y2="100" stroke="#18202b" marker-end="url(#a)"/>
+    <line x1="815" y1="100" x2="853" y2="100" stroke="#18202b" marker-end="url(#a)"/>
+    <text x="834" y="92" text-anchor="middle" font-size="11" fill="#4a5566">통과</text>
+    <path d="M755,138 L755,190 L555,190 L555,162" fill="none" stroke="#c77700" stroke-dasharray="4 3" marker-end="url(#a)"/>
+    <text x="655" y="206" text-anchor="middle" font-size="11" fill="#c77700">실패 → D 단계로 가지 않고 바탕 피팅 재검토</text>
+
+    <rect x="455" y="250" width="270" height="110" rx="4" fill="none" stroke="#18202b"/>
+    <text x="590" y="274" text-anchor="middle" font-weight="700">⑤ 검증 (피팅에 안 쓴 데이터)</text>
+    <text x="590" y="298" text-anchor="middle" font-size="12">STAND 정지 구간마다 1장씩 9장</text>
+    <text x="590" y="316" text-anchor="middle" font-size="12">맨몸 vs SMPL+D 같은 절차로 자세만 맞춤</text>
+    <text x="590" y="334" text-anchor="middle" font-size="12">IoU 0.838 → 0.925 · depth 1.59 → 1.22 cm</text>
+
+    <rect x="785" y="250" width="300" height="110" rx="4" fill="none" stroke="#18202b"/>
+    <text x="935" y="274" text-anchor="middle" font-weight="700">⑥ 보행 피팅에 사용</text>
+    <text x="935" y="298" text-anchor="middle" font-size="12">관절 = β 만으로 (D 는 뼈를 안 옮김)</text>
+    <text x="935" y="316" text-anchor="middle" font-size="12">표면 = SMPL + D (신발·상의가 뼈를 따라 움직임)</text>
+    <text x="935" y="334" text-anchor="middle" font-size="12">반바지 = D 없이 한쪽 데이터 항</text>
+
+    <line x1="970" y1="160" x2="970" y2="248" stroke="#18202b" marker-end="url(#a)"/>
+    <line x1="900" y1="160" x2="680" y2="248" stroke="#18202b" marker-end="url(#a)"/>
+    <text x="20" y="410" font-size="11" fill="#4a5566">근거: Weiss et al. ICCV 2011 (실루엣 + depth 체형) · Alldieck et al. CVPR 2018 (돌기 영상 → SMPL+D) · BUFF CVPR 2017 (옷 아래 몸)</text>
+  </g>
+</svg>

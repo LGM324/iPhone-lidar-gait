@@ -74,8 +74,7 @@ BP_L_HIP, BP_L_KNEE, BP_L_ANKLE = 0, 3, 6   # far  = 왼다리
 def make_smpl():
     """SMPL 로드 (Stage05/06/07 과 동일: neutral, num_betas=10)."""
     import smplx
-    smpl = smplx.create(SMPL_MODEL, model_type="smpl",
-                        gender="neutral", num_betas=10).to(DEVICE)
+    smpl = walkcfg.make_smpl(SMPL_MODEL).to(DEVICE)
     faces = smpl.faces.astype(np.int64)
     return smpl, faces
 
@@ -255,7 +254,9 @@ def main(cycle=False):
             thigh_near_resid_cm=rn["thigh_cm"], thigh_near_npts=rn["thigh_n"],
             shank_near_resid_cm=rn["shank_cm"], shank_near_npts=rn["shank_n"],
             knee_far=float(far["far_knee_fit"][r_fr[fid_int]]),
-            thigh_far_resid_cm=rf["thigh_cm"], thigh_far_npts=rf["thigh_n"],
+            thigh_far_resid_cm=rf["thigh_cm"],
+            # far_spike_refit.py 가 reject 한 프레임(재피팅해도 튐) → 관측 점 0 으로 = 가림과 같이 보간
+            thigh_far_npts=(0 if ("reject" in far.files and bool(far["reject"][r_fr[fid_int]])) else rf["thigh_n"]),
             shank_far_resid_cm=rf["shank_cm"], shank_far_npts=rf["shank_n"],
             far_meas=bool(n_far_total >= MIN_FAR_PTS),
         ))

@@ -15,7 +15,8 @@
 | NB6 knee_timeseries | CPU | 보행주기 측정 → 측정 근거 → 가림 판정 → 보간 | `05_knee/` |
 | NB7 imu_validation | CPU | IMU 무릎각 · 동기화 · 비교 | `06_imu/` |
 | NB8 visualize | CPU | 단계별 그림·영상 일괄 생성 | `viz/` |
-| **NB_RUN_ALL** | GPU | NB1 ~ NB7 의 셀을 순서대로 실행, 단계마다 결과 파일 확인 (`START_AT` 으로 이어하기) | — |
+| **NB_RUN_ALL** | GPU | NB1 ~ NB7 의 셀을 순서대로 실행, 단계마다 결과 파일 확인 (`START_AT` 으로 이어하기). NB5 뒤 튄 프레임 재피팅 자동 실행 | — |
+| **NB_EXPERIMENTS** | GPU | 체형(β) × 표면(D) × 데이터 항 16 조합을 같은 조건으로 실행 → 요약표·주효과 → 미리 정한 기준으로 최선 조합 선택 → 250 프레임 확인 | `experiments/` |
 
 각 NB 끝의 `시각화` 셀은 그 단계의 그림 (`viz/NB{k}/`) 과 영상 (`viz/videos/`) 을 만듭니다.
 
@@ -29,7 +30,19 @@
 | C | `a0_align_v2.py` (몸 정렬 + 좌우 다리 구분 `side_from_zorder`), `depthfit_near_leg_lam0.py`, `depthfit_far_leg_lam0.py`, `08_ankle_refit.py` (선택) |
 | D | `knee_measurement_basis.py`, `far_thigh_npts_gate.py`, `far_thigh_infill.py`, `far_thigh_infill_v2.py` |
 | E | `imu_validate.py` |
+| 개인 메쉬·옷 | `personal_smpl.py` (SMPL+D, 관절은 β 만으로), `leg_data_term.py` (하의 한쪽 데이터 항), `far_spike_refit.py` (튄 프레임 재피팅) |
 | 시각화 | `viz_stages.py`, `viz_video.py`, `viz_depth.py`, `viz_pipeline.py`, `depth_viewer.py` (Open3D, 로컬) |
+
+## `NB_RUN_ALL` 주요 옵션 (환경변수로 스크립트에 전달)
+
+| 옵션 | 환경변수 | 효과 | 결과 폴더 꼬리표 |
+|---|---|---|---|
+| `PERSONAL_MESH` | `WALK_PERSONAL` | 개인 메쉬 (β + D) 사용 | `_personal` |
+| `CLOTH_ONESIDED` | `WALK_CLOTH_ONESIDED` | 하의 정점은 "몸이 옷 밖으로 나오면 벌점" 만 (허용 6 cm) | `_c1` |
+| `QUICK_FRAMES` | `WALK_FRAME_LIMIT` | 앞쪽 N 프레임만 (빠른 확인) | `_q{N}` |
+| `LOCAL_CACHE` | `WALK_DEPTH_SEQ`, `WALK_VIDEO_SEQ` | NB5 부터 depth/video 를 Colab 로컬 복사본에서 읽음 | — |
+
+꼬리표가 붙은 결과는 별도 폴더(`04_fit_personal_c1_q84` 등)에 저장되어 기준 결과를 덮어쓰지 않습니다. 옵션을 모두 끄면 이전과 같은 결과가 나옵니다 (데이터 항: 이전 공식과 차이 0 확인, `personal_smpl`: D = 0 이면 smplx 와 정점·관절 차이 0).
 
 ## 이식 검증 (2026-10-02, 로컬)
 

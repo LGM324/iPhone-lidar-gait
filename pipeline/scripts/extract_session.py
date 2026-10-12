@@ -134,13 +134,14 @@ def scan(r3d, out):
     print(f"[saved] {out}/meta.json, motion_envelope.npz, scan_preview.png")
 
 
-def extract(r3d, out, start, n, step=1):
-    """step=2 → 2프레임마다 1장 (60fps 영상을 30fps 로 맞춤. 프레임 수 기준 파라미터가 30fps 에서 검증됨)."""
+def extract(r3d, out, start, n, step=1, fid_list=None):
+    """fid_list 가 있으면 그 프레임들만 (정지 프레임 골라 뽑기용). step=2 → 2프레임마다 1장 (60fps 영상을 30fps 로 맞춤. 프레임 수 기준 파라미터가 30fps 에서 검증됨)."""
     z, meta, names, fids, hw = open_r3d(r3d)
     fset = set(fids)
-    sel = [f for f in range(start, start + n * step, step) if f in fset]
-    if len(sel) != n:
-        print(f"[WARN] 요청 {n}f 중 {len(sel)}f 만 존재")
+    want = sorted(fid_list) if fid_list else list(range(start, start + n * step, step))
+    sel = [f for f in want if f in fset]
+    if len(sel) != len(want):
+        print(f"[WARN] 요청 {len(want)}f 중 {len(sel)}f 만 존재")
     import shutil
     for d in ("rgb", "depth_npy", "conf_npy"):
         shutil.rmtree(f"{out}/{d}", ignore_errors=True)   # 이전 window 프레임이 섞이지 않게
@@ -165,6 +166,7 @@ def extract(r3d, out, start, n, step=1):
     mp = f"{out}/meta.json"
     info = json.load(open(mp, encoding="utf-8")) if os.path.exists(mp) else {}
     info["window"] = dict(start=sel[0], end=sel[-1], n=len(sel), n_depth=nd, n_conf=nc, step=step,
+                          fid_list=sel if fid_list else None,
                           fps_eff=float(meta.get("fps", 30)) / step)
     json.dump(info, open(mp, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
     print(f"[extract] fid {sel[0]}~{sel[-1]} step {step} ({len(sel)}f, {float(meta.get('fps', 30)) / step:.0f} fps)  depth={nd} conf={nc}  K={K}")
@@ -228,6 +230,7 @@ if __name__ == "__main__":
     ap.add_argument("--start", type=int)
     ap.add_argument("--n", type=int, default=250)
     ap.add_argument("--step", type=int, default=1, help="2 = 2프레임마다 1장 (60fps → 30fps)")
+    ap.add_argument("--fids", default=None, help="쉼표로 구분한 fid 목록 (있으면 --start/--n/--step 무시)")
     ap.add_argument("--video", action="store_true", help="fid 표시 미리보기 mp4")
     ap.add_argument("--vfrom", type=int, default=None, help="영상 시작 fid (기본 처음)")
     ap.add_argument("--vto", type=int, default=None, help="영상 끝 fid (기본 끝)")
@@ -236,7 +239,9 @@ if __name__ == "__main__":
     a = ap.parse_args()
     if a.scan:
         scan(a.r3d, a.out)
-    if a.start is not None:
+    if a.fids:
+        extract(a.r3d, a.out, None, 0, 1, [int(x) for x in a.fids.split(",") if x.strip()])
+    elif a.start is not None:
         extract(a.r3d, a.out, a.start, a.n, a.step)
     if a.video:
         preview_video(a.r3d, a.out, a.vfrom, a.vto, a.vwidth, a.vname)
