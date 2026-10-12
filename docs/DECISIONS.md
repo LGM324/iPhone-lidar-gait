@@ -9,7 +9,7 @@
 > - **좌우 다리 구분 v2.3:** 하체 점 z 1D 2-means, 분리 8 cm 미만이면 "겹침"으로 보고 전부 near 처리.
 > - **IMU 동기화:** 점프 착지 앵커 + 활동 envelope 상관(평활 창 1/2/4 s 강건성) + 무릎각 곡선 미세정렬. 점프가 없는 세션은 탐색 창을 보행주기의 0.3 으로 제한.
 > - **60 fps 영상:** 프레임 기준 파라미터가 30 fps 에서 검증됐으므로 STEP = 2 로 30 fps 로 맞춤.
-> - **개인 메쉬·옷 처리·튐 재피팅 (D2 개정, D12, D13):** [DECISIONS_2026-10_personal_mesh.md](DECISIONS_2026-10_personal_mesh.md) — 이전 STAND 피팅이 거꾸로 선 채였던 버그, SMPL+D 개인 메쉬, 옷 처리 후보 비교, 튄 프레임 재피팅.
+> - **개인 메쉬·옷 처리·튐 재피팅 (D2 개정, D12, D13):** [DECISIONS_2026-10_personal_mesh.md](DECISIONS_2026-10_personal_mesh.md) — 기준 β (b0 = 4D-Humans 평균 + 키 보정), SMPL+D 개인 메쉬, 옷 처리 후보 비교, 튄 프레임 재피팅.
 
 ## 전체 구조도
  
@@ -46,17 +46,9 @@
 |---|---|---|
 | 프레임별 HMR β | 프레임마다 출렁임 → 4D-Humans 노트북에서 진단용으로만 저장 | 기각 |
 | T-pose 1단계 체형 fit | 합격 기준 MPJPE < 3 cm 미달: 최저 3.01 cm(β 8/10 clamp), sweep 32조합 최상 3.50 cm · 어깨폭 −4.5 cm, 골반폭 −2.6 cm | FAIL |
-| STAND 4뷰 (II-10 → II-13) | 최종 키 1.8076 m (실측 1.81) · 점→메쉬 3.4 cm · 몸통·다리 IoU 0.455 | 채택 |
+| STAND 4뷰 (II-8 → II-10) | 4D-Humans 4방향 β 평균 → 자세 높이 평균 1.81 m 로 키 보정. 이후 depth 단계의 β 변화 < 0.03 | 기준 β (b0) |
 
-| II-13 단계 | 4뷰 target 평균 | 하체 z 평균 | 점→메쉬 | 몸통·다리 IoU |
-|---|---|---|---|---|
-| yaw-only | 0.132 m | 0.153 m | 0.055 m | 0.332 |
-| + raw depth 잔차 loss | 0.133 m | 0.118 m | 0.055 m | 0.336 |
-| + 왼쪽 뷰 보정 (최종) | 0.087 m | 0.111 m | 0.034 m | 0.455 |
-
-- raw depth 잔차를 넣자 하체 z가 좋아졌지만, 실루엣 IoU를 재보니 왼쪽 뷰만 0.0035로 붕괴. 체형 문제가 아니라 왼쪽 뷰 회전 정렬 문제로 진단했다.
-- 왼쪽 뷰 보정(yaw +10°, x −0.25 m, y −0.08 m) 후 왼쪽 IoU 0.0035 → 0.411, 하체 z 샘플 0 → 1359.
-- 근거 문서 없음 보정값을 찾은 탐색 과정은 기록이 없다. 원본은 "empirical, 물리적 의미 아님, x/pivot 정렬이 진짜 원인일 가능성"이라고 적고 있다.
+- 2026-10 개정: 이 β 는 사실상 "4D-Humans 평균 + 키" 이므로 기준 β (b0) 로 두고, 돌기 영상 기반 개인 메쉬와 비교한다 → [D2 개정](DECISIONS_2026-10_personal_mesh.md), [재현 코드](../personalization/baseline_beta).
 
 출처: BC_stand_smpl_fit/EXPERIMENTS.md · outputs/ii13_single_refine_rawdepth_w05_leftcorr/final_refine_report.json · ii17 silhouette json · Tpose/[Script]02_smpl/[Stage1] sweep summary.md
 ### D3 · 사람 깊이(depth) 소스
